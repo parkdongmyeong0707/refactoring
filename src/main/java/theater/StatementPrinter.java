@@ -24,24 +24,34 @@ public class StatementPrinter {
      * @throws RuntimeException if one of the play types is not known
      */
     public String statement() {
-        int totalAmount = 0;
-        int volumeCredits = 0;
+
         final StringBuilder result = new StringBuilder("Statement for "
                 + invoice.getCustomer() + System.lineSeparator());
-
         for (Performance p : invoice.getPerformances()) {
-
-            // add volume credits
-            volumeCredits = getVolumeCredits(p, volumeCredits);
-
-            // print line for this order
-            result.append(String.format("  %s: %s (%s seats)%n", getPlay(p).getName(), getFormat(getAmount(p)),
+            result.append(String.format("  %s: %s (%s seats)%n",
+                    getPlay(p).getName(),
+                    getFormat(getAmount(p)),
                     p.getAudience()));
+        }
+        getAppend(result, String.format("Amount owed is %s%n", getFormat(getTotalAmount())));
+        result.append(String.format("You earned %s credits%n", getTotalVolumeCredit()));
+        return result.toString();
+    }
+
+    private int getTotalAmount() {
+        int totalAmount = 0;
+        for (Performance p : invoice.getPerformances()) {
             totalAmount += getAmount(p);
         }
-        getAppend(result, String.format("Amount owed is %s%n", getFormat(totalAmount)));
-        result.append(String.format("You earned %s credits%n", volumeCredits));
-        return result.toString();
+        return totalAmount;
+    }
+
+    private int getTotalVolumeCredit() {
+        int volumeCredits = 0;
+        for (Performance p : invoice.getPerformances()) {
+            volumeCredits += getVolumeCredits(p);
+        }
+        return volumeCredits;
     }
 
     private static String getFormat(int totalAmount) {
@@ -52,13 +62,15 @@ public class StatementPrinter {
         return result.append(usd);
     }
 
-    private int getVolumeCredits(Performance performance, int result) {
-        result += Math.max(performance.getAudience() - Constants.BASE_VOLUME_CREDIT_THRESHOLD, 0);
+    private int getVolumeCredits(Performance performance) {
+        int credits = Math.max(performance.getAudience() - Constants.BASE_VOLUME_CREDIT_THRESHOLD, 0);
+
         // add extra credit for every five comedy attendees
         if ("comedy".equals(getPlay(performance).getType())) {
-            result += performance.getAudience() / Constants.COMEDY_EXTRA_VOLUME_FACTOR;
+            credits += performance.getAudience() / Constants.COMEDY_EXTRA_VOLUME_FACTOR;
         }
-        return result;
+
+        return credits;
     }
 
     private Play getPlay(Performance performance) {
