@@ -29,22 +29,27 @@ public class StatementPrinter {
         final StringBuilder result = new StringBuilder("Statement for "
                 + invoice.getCustomer() + System.lineSeparator());
 
-        final NumberFormat frmt = NumberFormat.getCurrencyInstance(Locale.US);
-
         for (Performance p : invoice.getPerformances()) {
 
             // add volume credits
             volumeCredits = getVolumeCredits(p, volumeCredits);
 
             // print line for this order
-            result.append(String.format("  %s: %s (%s seats)%n", getPlay(p).getName(), frmt.format(getAmount(p)
-                            / PERCENT_FACTOR),
+            result.append(String.format("  %s: %s (%s seats)%n", getPlay(p).getName(), getFormat(getAmount(p)),
                     p.getAudience()));
             totalAmount += getAmount(p);
         }
-        result.append(String.format("Amount owed is %s%n", frmt.format(totalAmount / PERCENT_FACTOR)));
+        getAppend(result, String.format("Amount owed is %s%n", getFormat(totalAmount)));
         result.append(String.format("You earned %s credits%n", volumeCredits));
         return result.toString();
+    }
+
+    private static String getFormat(int totalAmount) {
+        return NumberFormat.getCurrencyInstance(Locale.US).format(totalAmount / PERCENT_FACTOR);
+    }
+
+    private static StringBuilder getAppend(StringBuilder result, String usd) {
+        return result.append(usd);
     }
 
     private int getVolumeCredits(Performance performance, int result) {
@@ -66,7 +71,7 @@ public class StatementPrinter {
         switch (getPlay(performance).getType()) {
             case "tragedy":
                 result = TRAGEDY_BASE_AMOUNT;
-                if (performance.getAudience() > Constants.TRAGEDY_AUDIENCE_THRESHOLD) {
+                if (performance.getAudience() > TRAGEDY_AUDIENCE_THRESHOLD) {
                     result += TRAGEDY_OVER_BASE_CAPACITY_PER_PERSON * (performance.getAudience()
                             - TRAGEDY_AUDIENCE_THRESHOLD);
                 }
